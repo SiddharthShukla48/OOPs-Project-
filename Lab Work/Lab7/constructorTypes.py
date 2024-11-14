@@ -7,20 +7,15 @@ class Student:
 # non parameterised constructor
     def __init__(self):
         self.name = "abc"
-
-# non parameterised constructor
-    def __init__(self):
-        self.name = "abc"
         print(self.name)
 
 # parameterised constructor
 
-    def __init__(self, name, age):
+    def __init__(self, name = None, age= None):
         self.name = name
         self.age = age
+        print(self.name)
+        print(self.age)
 
         
-# creating first object
-emma = Student()
-# creating Second object
 kelly = Student('Kelly', 13)
