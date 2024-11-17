@@ -68,20 +68,19 @@ The lab work is organized into multiple sessions covering various Python program
 
 #### Lab 10: Algorithms
 - Sorting Algorithms
+    - Bubble Sort
+    - Selection Sort
+    - Merge Sort
+    - Quick Sort
 - Searching Algorithms
+    - Linear Search
+    - Binary Search
 - Binary Tree Implementation
 
 ## Featured Project: XGBoost Implementation
 This repository also includes a complete implementation of the XGBoost algorithm from scratch. For detailed information about the XGBoost project, please refer to:
 
 [XGBoost Project Implementation](Project/readme.md)
-<<<<<<< HEAD
-
-## Requirements
-- Python 3.x
-- NumPy (for XGBoost implementation)
-=======
->>>>>>> 3aaff352cb74d632924273ba5e3ffb63bdcec74b
 
 ## Usage
 Each lab's code can be run independently. Navigate to the specific lab directory and run the Python files:
