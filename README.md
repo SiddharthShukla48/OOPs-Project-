@@ -18,6 +18,7 @@ The lab work is organized into multiple sessions covering various Python program
 - Perfect Number
 - Multiplication Table Generator
 - Strong Number
+- Factorial Calculator
 
 #### Lab 3: Advanced Number Theory
 - NCR Calculator
@@ -73,7 +74,7 @@ The lab work is organized into multiple sessions covering various Python program
 ## Featured Project: XGBoost Implementation
 This repository also includes a complete implementation of the XGBoost algorithm from scratch. For detailed information about the XGBoost project, please refer to:
 
-[XGBoost Project Implementation](..Project/readme.md)
+[XGBoost Project Implementation](Project/readme.md)
 
 ## Requirements
 - Python 3.x
