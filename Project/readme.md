@@ -105,33 +105,6 @@ predictions = model.predict(X)
 * Implements early stopping for better efficiency
 * Uses vectorized operations for gradient and prediction calculations
 
-## Limitations
-
-This implementation is meant for educational purposes and differs from the official XGBoost library in several ways:
-
-* No parallel processing support
-* Limited objective functions (only regression and binary classification)
-* No categorical feature support
-* No missing value handling
-* No built-in cross-validation
-
-## Future Improvements
-
-Potential areas for enhancement:
-
-* Add support for multi-class classification
-* Implement parallel processing for tree building
-* Add feature importance calculation
-* Add categorical feature handling
-* Implement missing value support
-* Add more objective functions
-
 ## Requirements
 * NumPy
 * Python 3.x
-
-## Contributing
-Feel free to submit issues, fork the repository, and create pull requests for any improvements.
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
