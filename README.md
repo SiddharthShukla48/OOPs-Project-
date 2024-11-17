@@ -77,7 +77,7 @@ The lab work is organized into multiple sessions covering various Python program
     - Binary Search
 - Binary Tree Implementation
 
-## Featured Project: XGBoost Implementation
+## Project: XGBoost Implementation From Scratch
 This repository also includes a complete implementation of the XGBoost algorithm from scratch. For detailed information about the XGBoost project, please refer to:
 
 [XGBoost Project Implementation](Project/readme.md)
