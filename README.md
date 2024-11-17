@@ -76,9 +76,5 @@ This repository also includes a complete implementation of the XGBoost algorithm
 
 [XGBoost Project Implementation](Project/readme.md)
 
-## Requirements
-- Python 3.x
-- NumPy (for XGBoost implementation)
-
 ## Usage
 Each lab's code can be run independently. Navigate to the specific lab directory and run the Python files:
