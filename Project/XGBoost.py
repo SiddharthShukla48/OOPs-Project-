@@ -90,13 +90,13 @@ class XGBoost:
         Find the best split for a node in the tree.
         
         The split gain formula is:
-        gain = 0.5 * [GL²/(HL + λ) + GR²/(HR + λ) - (GL + GR)²/(HL + HR + λ)] - γ
+        gain = 0.5 * [GL²/(HL + λ) + GR²/(HR + λ) - (GL + GR)²/(HL + HR + λ)] - y
         
         where:
         GL, GR = sum of gradients in left/right child
         HL, HR = sum of hessians in left/right child
         λ = L2 regularization term
-        γ = minimum gain needed to split
+        y = minimum gain needed to split
         """
         best_gain = -float("inf")
         best_split = None
@@ -113,6 +113,8 @@ class XGBoost:
                 right_mask = ~left_mask
                 
                 # Skip if either child would have too few samples
+                # Check if split would create valid groups
+                # sum() counts True values in boolean array
                 if sum(left_mask) < self.min_samples_split or sum(right_mask) < self.min_samples_split:
                     continue
                 
@@ -144,10 +146,16 @@ class XGBoost:
         
         where λ is the L2 regularization term.
         """
-        # Stop if max depth reached or not enough samples
+
+        # Check stopping conditions:
+        # 1. If we've reached maximum depth
+        # 2. If we don't have enough samples to split
+
         if depth == self.max_depth or len(y) < self.min_samples_split:
+            # calculates and return leaf value
             leaf_value = -np.sum(gradients) / (np.sum(hessians) + self.reg_lambda)
             return {"leaf_value": leaf_value}
+        
 
         # Find the best split
         split = self._split(X, y, gradients, hessians)
@@ -163,13 +171,17 @@ class XGBoost:
 
         # Recursively build left and right subtrees
         left_tree = self._build_tree(
-            X[left_mask], y[left_mask], 
-            gradients[left_mask], hessians[left_mask], 
+            X[left_mask], 
+            y[left_mask], 
+            gradients[left_mask], 
+            hessians[left_mask], 
             depth + 1
         )
         right_tree = self._build_tree(
-            X[right_mask], y[right_mask], 
-            gradients[right_mask], hessians[right_mask], 
+            X[right_mask],
+            y[right_mask], 
+            gradients[right_mask],
+            hessians[right_mask], 
             depth + 1
         )
 
@@ -208,6 +220,8 @@ class XGBoost:
             
             # Build new tree
             tree = self._build_tree(X, y, gradients, hessians)
+
+            # add it to the collection of trees 
             self.trees.append(tree)
             
             # Update predictions
@@ -221,9 +235,15 @@ class XGBoost:
                 self.validation_error_history.append(val_error)
 
                 if self.early_stopping_rounds is not None:
-                    if t > 0 and val_error >= min(self.validation_error_history[-self.early_stopping_rounds:]):
-                        print(f"Early stopping at iteration {t}")
-                        break
+                    if t > 0:
+                        # Get minimum error in recent rounds
+                        min_recent_error = min(
+                            self.validation_error_history[-self.early_stopping_rounds:]
+                        )
+                        # If current error is worse than recent minimum, stop
+                        if val_error >= min_recent_error:
+                            print(f"Early stopping at iteration {t}")
+                            break
 
     def _predict_tree(self, tree, X):
         """
@@ -234,14 +254,21 @@ class XGBoost:
             return np.full(X.shape[0], tree["leaf_value"])
         
         split = tree["split"]
+        # Determine which samples go left
         left_mask = X[:, split["feature"]] <= split["threshold"]
+
+        # Initialize predictions array with zeros
         predictions = np.zeros(X.shape[0])
+
+        # Recursively get predictions for left and right subtrees
         predictions[left_mask] = self._predict_tree(tree["left"], X[left_mask])
         predictions[~left_mask] = self._predict_tree(tree["right"], X[~left_mask])
         return predictions
 
     def predict(self, X):
         """
+        Make predictions for all samples in X using all trees
+        
         Make predictions for input data X.
         
         For regression:
@@ -283,8 +310,11 @@ class XGBoost:
 if __name__ == "__main__":
     # Generate sample binary classification data
     np.random.seed(42)
+
     X = np.random.rand(100, 2)  # 100 samples, 2 features
-    y = (X[:, 0] + X[:, 1] > 1).astype(int)  # Binary target
+
+      # Create binary target: 1 if sum of features > 1, else 0
+    y = (X[:, 0] + X[:, 1] > 1).astype(int)  
 
     # Create and train model
     model = XGBoost(
@@ -295,8 +325,30 @@ if __name__ == "__main__":
     )
     
     # Fit model with validation data
-    model.fit(X, y, X_val=X, y_val=y)
-    
-    # Make predictions
-    predictions = model.predict(X)
-    print("Sample predictions:", predictions[:5])
+model.fit(X, y, X_val=X, y_val=y)
+
+# Make predictions on our data
+predictions = model.predict(X)
+
+# Detailed prediction analysis (first 5 samples)
+print("\nDetailed prediction analysis (first 5 samples):")
+correct_predictions_subset = 0  # Counter for correct predictions in the subset
+for i in range(5):
+    predicted_class = 1 if predictions[i] > 0.5 else 0
+    true_class = y[i]
+    if predicted_class == true_class:
+        correct_predictions_subset += 1  # Increment correct predictions for the subset
+    print(f"\nSample {i + 1}:")
+    print(f"Features: [{X[i, 0]:.3f}, {X[i, 1]:.3f}]")
+    print(f"True class: {true_class}")
+    print(f"Predicted probability: {predictions[i]:.3f}")
+    print(f"Predicted class: {predicted_class}")
+
+# Accuracy for the first 5 samples
+accuracy_subset = correct_predictions_subset / 5
+print(f"\nAccuracy for the first 5 samples: {accuracy_subset:.2%}")
+
+# Let's also evaluate the model's performance for the entire dataset
+correct_predictions = sum((predictions > 0.5) == y)
+accuracy = correct_predictions / len(y)
+print(f"\nOverall accuracy: {accuracy:.2%}")

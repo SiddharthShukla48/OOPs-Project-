@@ -1,160 +1,63 @@
 # XGBoost Implementation from Scratch
 
-## Table of Contents
-* [Overview](#overview)
-* [Algorithm Details](#algorithm-details)
-* [Implementation](#implementation)
-* [Mathematical Foundation](#mathematical-foundation)
-* [Code Walkthrough](#code-walkthrough)
-* [Usage Example](#usage-example)
-* [Tips and Best Practices](#tips-and-best-practices)
-
 ## Overview
+This repository contains a pure Python implementation of the XGBoost (eXtreme Gradient Boosting) algorithm. XGBoost is a powerful and efficient implementation of gradient boosting machines that has become one of the most popular machine learning algorithms, especially for structured/tabular data.
 
-This is a from-scratch implementation of XGBoost (eXtreme Gradient Boosting) in Python. The implementation includes support for:
+## Features
+This implementation includes several key features of the XGBoost algorithm:
 
-- Both regression and binary classification
-- L1 and L2 regularization
-- Early stopping
-- Tree pruning
-- Custom loss functions
+* Support for both regression (`reg:squarederror`) and binary classification (`binary:logistic`)
+* Gradient-based learning with first and second order gradients
+* L1 and L2 regularization
+* Tree pruning using the `gamma` parameter
+* Early stopping functionality
+* Configurable tree parameters (depth, minimum samples for splitting)
 
-## Algorithm Details
-
-### Basic Workflow
-
-1. **Initialization**
-   - Set initial prediction (base_score)
-   - For regression: mean of target values
-   - For classification: log odds of positive class
-
-2. **Boosting Process**
-   ```
-   For each iteration t:
-       1. Calculate gradients and hessians
-       2. Build new tree to predict gradients
-       3. Add tree predictions * learning_rate
-       4. Check early stopping criteria
-   ```
-
-3. **Tree Building**
-   ```
-   While node can be split:
-       1. Find best split point
-       2. Calculate gain
-       3. Split if gain > gamma
-       4. Recursively continue on child nodes
-   ```
-
-## Implementation
+## Technical Implementation Details
 
 ### Core Components
 
-```python
-class XGBoost:
-    def __init__(self):
-        """
-        Parameters:
-        - n_estimators: number of trees
-        - learning_rate: step size
-        - max_depth: maximum tree depth
-        - min_samples_split: minimum samples for splitting
-        - reg_lambda: L2 regularization
-        - reg_alpha: L1 regularization
-        - gamma: minimum gain for splitting
-        - objective: "reg:squarederror" or "binary:logistic"
-        - early_stopping_rounds: stopping criterion
-        """
+#### 1. Tree Building (`_build_tree`):
+* Implements recursive tree construction
+* Uses gradient and hessian information for optimal splits
+* Includes stopping criteria based on depth and minimum samples
+* Calculates leaf values using the XGBoost formula: `-sum(gradients) / (sum(hessians) + λ)`
 
-    def fit(self, X, y):
-        """Train the model"""
+#### 2. Split Finding (`_split`):
+* Implements the XGBoost split finding algorithm
+* Uses the gain formula: `0.5 * [GL²/(HL + λ) + GR²/(HR + λ) - (GL + GR)²/(HL + HR + λ)] - γ`
+* Includes minimum sample constraints
+* Considers L2 regularization in gain calculation
 
-    def predict(self, X):
-        """Make predictions"""
-```
+#### 3. Gradient and Hessian Calculation:
+* For regression:
+  * Gradient = `y_pred - y`
+  * Hessian = 1
+* For binary classification:
+  * Gradient = `p - y` where `p` is sigmoid(prediction)
+  * Hessian = `p * (1-p)`
 
-## Mathematical Foundation
+### Training Process
 
-### Key Formulas
+The training process follows these steps:
 
-1. **Objective Function**
-```
-Obj(θ) = L(θ) + Ω(θ)
-where:
-L(θ) = Σ l(yi, ŷi)     # Training loss
-Ω(θ) = γT + 1/2 λ||w||²  # Regularization
-```
+1. Initialize base predictions
+2. For each boosting round:
+   * Calculate gradients and hessians
+   * Build a new tree to predict the negative gradients
+   * Add tree predictions with learning rate
+   * Update running predictions
+   * Check early stopping conditions if validation data is provided
 
-2. **Split Gain**
-```
-Gain = 1/2 * [GL²/(HL + λ) + GR²/(HR + λ) - (GL + GR)²/(HL + HR + λ)] - γ
-where:
-GL, GR = sum of gradients (left/right)
-HL, HR = sum of hessians (left/right)
-λ = L2 regularization
-γ = minimum gain threshold
-```
+## Usage
 
-3. **Loss Functions**
-
-For Regression:
-```
-Loss = (y - ŷ)²/2
-Gradient = ŷ - y
-Hessian = 1
-```
-
-For Binary Classification:
-```
-Loss = -y*log(p) - (1-y)*log(1-p)
-Gradient = p - y
-Hessian = p*(1-p)
-where p = sigmoid(ŷ)
-```
-
-## Code Walkthrough
-
-### 1. Initialization
-```python
-def __init__(self, n_estimators=100, learning_rate=0.1, max_depth=3):
-    self.n_estimators = n_estimators
-    self.learning_rate = learning_rate
-    self.max_depth = max_depth
-```
-
-### 2. Gradient and Hessian Calculation
-```python
-def _gradient_and_hessian(self, y, y_pred):
-    if self.objective == "reg:squarederror":
-        gradient = y_pred - y
-        hessian = np.ones_like(y)
-    elif self.objective == "binary:logistic":
-        y_pred = 1 / (1 + np.exp(-y_pred))
-        gradient = y_pred - y
-        hessian = y_pred * (1 - y_pred)
-    return gradient, hessian
-```
-
-### 3. Split Finding
-```python
-def _split(self, X, y, gradients, hessians):
-    best_gain = -float("inf")
-    best_split = None
-    
-    for feature in range(X.shape[1]):
-        for threshold in np.unique(X[:, feature]):
-            gain = calculate_gain(gradients, hessians, threshold)
-            if gain > best_gain:
-                best_gain = gain
-                best_split = {"feature": feature, "threshold": threshold}
-    
-    return best_split
-```
-
-## Usage Example
+### Basic Example
 
 ```python
-# Create synthetic data
+from xgboost import XGBoost
+import numpy as np
+
+# Create sample data
 X = np.random.rand(100, 2)
 y = (X[:, 0] + X[:, 1] > 1).astype(int)
 
@@ -166,88 +69,69 @@ model = XGBoost(
     early_stopping_rounds=5
 )
 
-# Train
+# Train model
 model.fit(X, y, X_val=X, y_val=y)
 
-# Predict
+# Make predictions
 predictions = model.predict(X)
 ```
 
-## Tips and Best Practices
+### Parameters
 
-### Hyperparameter Tuning
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `n_estimators` | Number of boosting rounds | 100 |
+| `learning_rate` | Step size shrinkage to prevent overfitting | 0.1 |
+| `max_depth` | Maximum depth of each tree | 3 |
+| `min_samples_split` | Minimum samples required to split a node | 10 |
+| `reg_lambda` | L2 regularization term | 1.0 |
+| `reg_alpha` | L1 regularization term | 0.0 |
+| `gamma` | Minimum loss reduction for split | 0 |
+| `objective` | Learning objective ("reg:squarederror" or "binary:logistic") | "reg:squarederror" |
+| `early_stopping_rounds` | Stop training if validation score doesn't improve | None |
 
-1. **Learning Rate**
-   - Start with small values (0.01-0.1)
-   - Trade-off between training time and model quality
+## Implementation Notes
 
-2. **Number of Trees**
-   - More trees generally better
-   - Use early stopping to find optimal number
+### 1. Numerical Stability
+* Uses float64 for all calculations
+* Implements proper clipping for logistic objectives
+* Handles edge cases in split calculations
 
-3. **Tree Depth**
-   - Controls model complexity
-   - Deeper trees can overfit
-   - Typical range: 3-8
+### 2. Memory Efficiency
+* Uses NumPy arrays for efficient computation
+* Implements in-place updates where possible
 
-### Memory Usage
+### 3. Performance Considerations
+* Implements early stopping for better efficiency
+* Uses vectorized operations for gradient and prediction calculations
 
-The implementation stores:
-- All trees in memory
-- Gradients and hessians during training
-- Validation error history
+## Limitations
 
-Memory usage scales with:
-- Number of trees
-- Number of samples
-- Tree depth
+This implementation is meant for educational purposes and differs from the official XGBoost library in several ways:
 
-### Performance Optimization
+* No parallel processing support
+* Limited objective functions (only regression and binary classification)
+* No categorical feature support
+* No missing value handling
+* No built-in cross-validation
 
-Time complexity:
-- Training: O(n_trees * n_features * n_samples * log(n_samples))
-- Prediction: O(n_trees * log(n_samples))
+## Future Improvements
 
-Space complexity:
-- O(n_trees * 2^depth) for storing trees
-- O(n_samples) for gradients/hessians
+Potential areas for enhancement:
 
-### Best Practices
+* Add support for multi-class classification
+* Implement parallel processing for tree building
+* Add feature importance calculation
+* Add categorical feature handling
+* Implement missing value support
+* Add more objective functions
 
-1. **Data Preparation**
-   ```python
-   # Scale features
-   from sklearn.preprocessing import StandardScaler
-   scaler = StandardScaler()
-   X_scaled = scaler.fit_transform(X)
-   ```
+## Requirements
+* NumPy
+* Python 3.x
 
-2. **Cross-Validation**
-   ```python
-   from sklearn.model_selection import cross_val_score
-   scores = cross_val_score(model, X, y, cv=5)
-   ```
+## Contributing
+Feel free to submit issues, fork the repository, and create pull requests for any improvements.
 
-3. **Error Monitoring**
-   ```python
-   plt.plot(model.validation_error_history)
-   plt.title('Validation Error vs Iterations')
-   plt.show()
-   ```
-
-### Common Issues and Solutions
-
-1. **Overfitting**
-   - Reduce max_depth
-   - Increase min_samples_split
-   - Increase reg_lambda
-
-2. **Underfitting**
-   - Increase max_depth
-   - Decrease min_samples_split
-   - Increase n_estimators
-
-3. **Numerical Instability**
-   - Scale features
-   - Adjust learning_rate
-   - Handle missing values
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
