@@ -17,6 +17,7 @@ while(True):
             raise ValueTooSmallError
         elif num > 50:
             raise ValueTooLargeError
+        print("Great! value in correct range.")
         break
 
     except ValueTooSmallError:
@@ -24,4 +25,4 @@ while(True):
 
     except ValueTooLargeError:
         print("value out of range...try again")
-        print("Great! value in correct range.")
+        

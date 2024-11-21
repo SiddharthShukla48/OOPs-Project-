@@ -352,3 +352,53 @@ print(f"\nAccuracy for the first 5 samples: {accuracy_subset:.2%}")
 correct_predictions = sum((predictions > 0.5) == y)
 accuracy = correct_predictions / len(y)
 print(f"\nOverall accuracy: {accuracy:.2%}")
+
+
+
+
+from xgboost import XGBClassifier
+from sklearn.metrics import accuracy_score, log_loss
+import numpy as np
+
+# Example usage
+if __name__ == "__main__":
+    # Generate sample binary classification data
+    np.random.seed(42)
+    X = np.random.rand(100, 2)  # 100 samples, 2 features
+    y = (X[:, 0] + X[:, 1] > 1).astype(int)  # Create binary target
+
+    # Split data into training and testing sets
+    train_size = int(0.8 * len(X))
+    X_train, X_test = X[:train_size], X[train_size:]
+    y_train, y_test = y[:train_size], y[train_size:]
+
+    # Train custom XGBoost model
+    custom_model = XGBoost(
+        n_estimators=50,
+        learning_rate=0.1,
+        objective="binary:logistic",
+        early_stopping_rounds=5
+    )
+    custom_model.fit(X_train, y_train, X_val=X_test, y_val=y_test)
+    custom_preds = custom_model.predict(X_test)
+
+    # Train sklearn XGBoost model
+    sklearn_model = XGBClassifier(
+        n_estimators=50,
+        learning_rate=0.1,
+        max_depth=3,
+        use_label_encoder=False,
+        eval_metric="logloss"
+    )
+    sklearn_model.fit(X_train, y_train)
+    sklearn_preds = sklearn_model.predict_proba(X_test)[:, 1]  # Probabilities for binary classification
+
+    # Compare Results
+    custom_accuracy = accuracy_score(y_test, custom_preds > 0.5)
+    sklearn_accuracy = accuracy_score(y_test, sklearn_preds > 0.5)
+
+    custom_logloss = log_loss(y_test, custom_preds)
+    sklearn_logloss = log_loss(y_test, sklearn_preds)
+
+    print(f"Custom XGBoost Accuracy: {custom_accuracy:.4f}, Log Loss: {custom_logloss:.4f}")
+    print(f"Sklearn XGBoost Accuracy: {sklearn_accuracy:.4f}, Log Loss: {sklearn_logloss:.4f}")
